@@ -34,5 +34,3 @@ If, for some reason, the firware is not flashed, do the following
 ### Editor
 To have an interactive runtime with the board. Install the [Mu editor](https://codewith.mu/)
 More information can be found on [The circuitpython website](https://circuitpython.org/)
-
-Small test /h
