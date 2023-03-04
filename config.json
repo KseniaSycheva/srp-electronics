@@ -1,3 +1,25 @@
 {
-   "deployment_delay_in_miliseconds":60000
+   "deployment_delay_in_miliseconds":60000,
+   "I2C": {
+      "SDA": "SDA",
+      "SCL": "SCL"
+   },
+   "SPI": {
+      "SCLK": "A0",
+      "MOSI": "A1",
+      "MISO": "A2"
+   },
+   "UART": {
+      "RX": "RX",
+      "TX": "TX"
+   },
+   "microSD": {
+      "cs": "SCK"
+   },
+   "SX1276": {
+      "cs": "MOSI"
+   },
+   "BMP280": {
+      "address": ""
+   }
 }
