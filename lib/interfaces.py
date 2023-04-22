@@ -56,13 +56,14 @@ class Interface:
         return self.bmp280.temperature, self.bmp280.pressure, self.bmp280.altitude
 
     def send_bmp280_data(self):
-        t, p, a = self._read_bmp280_data()
+        t, p, csa = self._read_bmp280_data()
         self.lora_cs.value = False
         self.SPI.write([t, p, a])
         self.lora_cs.value = True
 
     def measure(self):
-        pass
+        if self.counter == 0:
+            pass
 
 
 
