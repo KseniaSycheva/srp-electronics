@@ -47,6 +47,12 @@ gps_buffer = {
    'longitude_minutes': [],
 }
 
+#hidde temlate material
+external.set_external_GPIO(0)
+camera_on = False
+apogee_data_save = False
+#end of temlate material
+
 while True:
    last_print = time.monotonic()
    while True:
@@ -76,5 +82,34 @@ while True:
          gps_buffer['latitude_minutes'].append(gps.latitude_minutes)
          gps_buffer['longitude_minutes'].append(gps.longitude_minutes)
 
+   #if statemachine.State = 4: #state is armed
+        #start data collection at 1 input per second
+        #if not camera_on:
+            #external.set_external_GPIO(1) #turns the camera on
+
+   #if statemachine.State = 5 or statemachine.State = 6: #state is launched or deployed
+        #start data collection at 10 inputs per second
+        #start sending data using LORA
+
+        #if time_since_launch >= [t_apogee - 3] and apogee_data_save = False:
+            #first save on SD Card to prevent corruption
+            #apogee_data_save = True
+
+        #if not pyro_deployed and time_since_launch >= [t.apogee - 2 seconds] and time_since_launch <= [2 + t_apogee]:
+            #if statemachine.State = 5:
+                #Barometer_check_if_time_for_apogee
+
+        #if not pyro_deployed and time_since_launch >= [2 + t_apogee]:
+            #deploy pyro
+
+        #if (time_since_launch > [t_apogee] and gps_thinks_we_are_about_to_land:
+            #second save on SD card to prevent corruption
+
+        #if time_since_laucnh >= 150:
+            #play recovery buzzer song
+            #external.set_external_GPIO(0) #turns off the camera
+            #camera_on = False
+
+   
    buzzer.buzzer_tick()
    states.tick()
