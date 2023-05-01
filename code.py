@@ -14,6 +14,8 @@ import json
 from utils import *
 
 
+
+
 delay_pyro_miliseconds = config.get_deployment_timer()
 print(f'Read in a delay of {delay_pyro_miliseconds} ms from the config file')
 config_path = '/config.json'
@@ -21,6 +23,18 @@ config_path = '/config.json'
 states = statemachine.Statemachine(PYRO_FIRE_DELAY_MS = delay_pyro_miliseconds)
 with open(config_path, 'r') as fp:
    data = json.load(fp)
+
+##
+# print(dir(board))
+# sck, miso, mosi = get_spi_pins(data)
+# spi = busio.SPI(sck, mosi, miso)
+# spi.try_lock()
+# spi.configure(50000)
+# print(type(board.A2))
+# sdcard = sdcardio.SDCard(spi, board.A2, 5000)
+##
+
+
 
 tx, rx = get_uart_pins(data)
 scl, sda = get_i2c_pins(data)
@@ -81,14 +95,14 @@ while True:
       #       gps.timestamp_utc.tm_sec,
       #    )
       # )
-      if len(buffer['temperature']) > data['buffer_capacity']:
-         for key in buffer.keys():
-            print(key + ": ", buffer[key])
-            buffer[key] = []
+      # if len(buffer['temperature']) > data['buffer_capacity']:
+      #   for key in buffer.keys():
+      #      print(key + ": ", buffer[key])
+      #      buffer[key] = []
 
-      buffer['temperature'].append(bmp280.temperature)
-      buffer['pressure'].append(bmp280.pressure)
-      buffer['altitude'].append(bmp280.altitude)
+      #buffer['temperature'].append(bmp280.temperature)
+      #buffer['pressure'].append(bmp280.pressure)
+      #buffer['altitude'].append(bmp280.altitude)
       # gps_buffer['latitude'].append(gps.latitude)
       # gps_buffer['longitude'].append(gps.longitude)
       # gps_buffer['latitude_degrees'].append(gps.latitude_degrees)
