@@ -1,3 +1,4 @@
+import asyncio
 import board
 import storage
 import external
@@ -5,60 +6,83 @@ import time
 import digitalio
 import statemachine
 import buzzer
-import config
 import adafruit_bmp280
 import adafruit_gps
 import adafruit_sdcard
+import adafruit_rfm9x
 import busio
 import json
 from utils import *
 
 
+async def fire_pyro_backup(states):
+   while True:
+      if states.check_if_pyro_should_be_fired():
+         external.neopixel_set_rgb(255,30,70)
+         external.PYRO_DETONATE()
+      await asyncio.sleep(0)
 
 
-delay_pyro_miliseconds = config.get_deployment_timer()
-print(f'Read in a delay of {delay_pyro_miliseconds} ms from the config file')
+async def poll_sensors(bmp280, gps, sd, rfm9x):
+   last_measured = time.time()
+   curr_buffer_size = 0
+   init_altitude = bmp280.altitude
+   while True:
+      if statemachine.state == 4:  # state is armed
+         # start data collection at 1 input per second
+         if time.time() - last_measured > 1:
+            success = await update_buffer(buffer, bmp280, gps)
+            if success: curr_buffer_size += 1
+
+      elif statemachine.state > 4:
+         if time.time() - last_measured > 0.1:
+            success = await update_buffer(buffer, bmp280, gps)
+            if success: curr_buffer_size += 1
+            if success >= buffer_capacity:
+               await save_and_transmit(sd, rfm9x, data)
+
+      buzzer.buzzer_tick()
+      states.tick()
+
+
 config_path = '/config.json'
-
-states = statemachine.Statemachine(PYRO_FIRE_DELAY_MS = delay_pyro_miliseconds)
 with open(config_path, 'r') as fp:
    data = json.load(fp)
 
-##
-# print(dir(board))
-# sck, miso, mosi = get_spi_pins(data)
-# spi = busio.SPI(sck, mosi, miso)
-# spi.try_lock()
-# spi.configure(50000)
-# print(type(board.A2))
-# sdcard = sdcardio.SDCard(spi, board.A2, 5000)
-##
+buffer_capacity = data["buffer_capacity"]
+delay_pyro_miliseconds = data["deployment_delay_in_miliseconds"]
+radio_freq_mhz = data["radio_freq_mhz"]
 
+print(f'Read in a delay of {delay_pyro_miliseconds} ms from the config file')
 
+states = statemachine.Statemachine(PYRO_FIRE_DELAY_MS = delay_pyro_miliseconds)
 
 tx, rx = get_uart_pins(data)
 scl, sda = get_i2c_pins(data)
 sck, miso, mosi = get_spi_pins(data)
+lora_cs, lora_rst = get_lora_pins(data)
+sd_cs = get_sdcard_pins(data)
 
-sensor_poll_freq = 0.5
-
-#uart = busio.UART(tx, rx, baudrate=9600, timeout=10)
+uart = busio.UART(tx, rx, baudrate=9600, timeout=5)
 i2c = busio.I2C(scl, sda)
 spi = busio.SPI(sck, mosi, miso)
 
 bmp280 = adafruit_bmp280.Adafruit_BMP280_I2C(i2c, 0x76)
 bmp280.sea_level_pressure = 1013.25
 
-# gps = adafruit_gps.GPS(uart, debug=True)
-# gps.send_command(b"PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
-# gps.send_command(b"PMTK220,1000")
+gps = adafruit_gps.GPS(uart, debug=True)
+gps.send_command(b"PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
+gps.send_command(b"PMTK220,1000")
 
-# sdcard = adafruit_sdcard.SDCard(
-#     board.SPI(),
-#     digitalio.DigitalInOut(sck),
-# )
-# vfs = storage.VfsFat(sdcard)
-# storage.mount(vfs, "/sd")
+sdcard = adafruit_sdcard.SDCard(
+     spi,
+     digitalio.DigitalInOut(sd_cs),
+)
+vfs = storage.VfsFat(sdcard)
+storage.mount(vfs, "/sd")
+
+rfm9x = adafruit_rfm9x.RFM9x(spi, lora_cs, lora_rst, radio_freq_mhz)
+rfm9x.send(bytes("Hello world!\r\n", "utf-8"))
 
 buffer = {
    'temperature': [],
@@ -78,8 +102,21 @@ camera_on = False
 apogee_data_save = False
 #end of temlate material
 
-while True:
-   while True:
+init_altitude = bmp280.altitude
+last_measured = time.time()
+
+
+async def main():
+   interrupt_task = asyncio.create_task(fire_pyro_backup(states))
+   polling_task = asyncio.create_task(poll_sensors(bmp280, gps, sdcard, rfm9x))
+
+   await asyncio.gather(interrupt_task, polling_task)
+
+
+asyncio.run(main())
+
+# while True:
+#    while True:
       # gps.update()
       # if not gps.has_fix:
       #    print("Waiting for fix...")
@@ -110,10 +147,10 @@ while True:
       # gps_buffer['latitude_minutes'].append(gps.latitude_minutes)
       # gps_buffer['longitude_minutes'].append(gps.longitude_minutes)
 
-   #if statemachine.State = 4: #state is armed
-        #start data collection at 1 input per second
-        #if not camera_on:
-            #external.set_external_GPIO(1) #turns the camera on
+   # if statemachine.state == 4: #state is armed
+   #      #start data collection at 1 input per second
+   #    if time.time() - last_measured > 1:
+   #       update_buffer(buffer, bmp280, gps)
 
    #if statemachine.State = 5 or statemachine.State = 6: #state is launched or deployed
         #start data collection at 10 inputs per second
@@ -139,6 +176,5 @@ while True:
             #camera_on = False
 
    
-   buzzer.buzzer_tick()
-   states.tick()
-   time.sleep(1 / sensor_poll_freq)
+   # buzzer.buzzer_tick()
+   # states.tick()

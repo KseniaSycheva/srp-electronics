@@ -149,8 +149,9 @@ class Statemachine:
                     self._queue_short_beep()
                     state_trans_has_happened = True
 
-
             if state_trans_has_happened:
+                for _ in range(self.state):
+                    self._queue_short_beep()
                 self.do_state_action()
                 self._reset_state_timer()
 

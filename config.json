@@ -1,26 +1,25 @@
 {
    "buffer_capacity": 16,
-   "deployment_delay_in_miliseconds":60000,
+   "deployment_delay_in_miliseconds": 60000,
+   "radio_freq_mhz": 915.0,
    "I2C": {
       "SDA": "SDA",
       "SCL": "SCL"
    },
    "SPI": {
-      "SCLK": "A0",
-      "MOSI": "A1",
-      "MISO": "A2"
+      "SCLK": "SCK",
+      "MOSI": "MOSI",
+      "MISO": "MISO"
    },
    "UART": {
       "RX": "RX",
       "TX": "TX"
    },
    "microSD": {
-      "cs": "SCK"
+      "cs": "A2"
    },
    "SX1276": {
-      "cs": "MOSI"
-   },
-   "BMP280": {
-      "address": ""
+      "cs": "A1",
+      "RST": "D6"
    }
 }
