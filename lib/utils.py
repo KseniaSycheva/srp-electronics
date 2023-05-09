@@ -1,5 +1,11 @@
+import asyncio
 import board
+import os
 import random
+import time
+
+
+BMP280_KEYS = ['temperature', 'pressure', 'altitude']
 
 
 def get_uart_pins(data):
@@ -54,8 +60,22 @@ async def update_buffer(buffer, bmp280, gps):
     return success
 
 
-async def save_and_transmit(sd, rfmx9, data):
-    pass
+async def save_and_transmit(rfmx9, data):
+    log_time = time.time()
+    with open(f'/data/bmp280.txt', 'a') as fp_bmp280, open(f'/data/gps.txt', 'a') as fp_gps:
+
+        fp_bmp280.write(str(log_time) + "\n")
+        fp_gps.write(str(log_time) + "\n")
+
+        for key, value in data.items():
+            if key in BMP280_KEYS:
+                fp_bmp280.write(key + "\n")
+                fp_bmp280.write(" ".join(value))
+            else:
+                print(value)
+                fp_gps.write(key + "\n")
+                fp_gps.write(" ".join(value))
+
 
 
 class FakeDevice:

@@ -1,6 +1,4 @@
 import asyncio
-import board
-import storage
 import external
 import time
 import digitalio
@@ -8,27 +6,30 @@ import statemachine
 import buzzer
 import adafruit_bmp280
 import adafruit_gps
-import adafruit_sdcard
 import adafruit_rfm9x
 import busio
 import json
 from utils import *
+import os
 
 
 async def fire_pyro_backup(states):
    while True:
       if states.check_if_pyro_should_be_fired():
          external.neopixel_set_rgb(255,30,70)
-         external.PYRO_DETONATE()
-      await asyncio.sleep(0)
+         #external.PYRO_DETONATE()
+      print('Pyro check')
+      await asyncio.sleep(1)
 
 
-async def poll_sensors(bmp280, gps, sd, rfm9x):
+async def poll_sensors(statemachine, bmp280, gps, rfm9x, data):
    last_measured = time.time()
    curr_buffer_size = 0
    init_altitude = bmp280.altitude
+   timeout = 10
+
    while True:
-      if statemachine.state == 4:  # state is armed
+      if 1 or statemachine.state == 4:  # state is armed
          # start data collection at 1 input per second
          if time.time() - last_measured > 1:
             success = await update_buffer(buffer, bmp280, gps)
@@ -39,10 +40,19 @@ async def poll_sensors(bmp280, gps, sd, rfm9x):
             success = await update_buffer(buffer, bmp280, gps)
             if success: curr_buffer_size += 1
             if success >= buffer_capacity:
-               await save_and_transmit(sd, rfm9x, data)
+               await save_and_transmit(rfm9x, data)
 
       buzzer.buzzer_tick()
       states.tick()
+      print('State:', statemachine.state)
+      await save_and_transmit(rfm9x, data)
+      await asyncio.sleep(5)
+
+
+try:
+    os.mkdir('/data')
+except:
+    pass
 
 
 config_path = '/config.json'
@@ -61,27 +71,32 @@ tx, rx = get_uart_pins(data)
 scl, sda = get_i2c_pins(data)
 sck, miso, mosi = get_spi_pins(data)
 lora_cs, lora_rst = get_lora_pins(data)
-sd_cs = get_sdcard_pins(data)
 
 uart = busio.UART(tx, rx, baudrate=9600, timeout=5)
-i2c = busio.I2C(scl, sda)
 spi = busio.SPI(sck, mosi, miso)
 
-bmp280 = adafruit_bmp280.Adafruit_BMP280_I2C(i2c, 0x76)
+try:
+    i2c = busio.I2C(scl, sda)
+    print('hi')
+    bmp280 = adafruit_bmp280.Adafruit_BMP280_I2C(i2c)
+    print(bmp280.temperature)
+except:
+    bmp280 = FakeBMP280()
 bmp280.sea_level_pressure = 1013.25
 
-gps = adafruit_gps.GPS(uart, debug=True)
+try:
+    gps = adafruit_gps.GPS(uart, debug=True)
+except:
+    gps = FakeGPS()
 gps.send_command(b"PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
 gps.send_command(b"PMTK220,1000")
 
-sdcard = adafruit_sdcard.SDCard(
-     spi,
-     digitalio.DigitalInOut(sd_cs),
-)
-vfs = storage.VfsFat(sdcard)
-storage.mount(vfs, "/sd")
-
-rfm9x = adafruit_rfm9x.RFM9x(spi, lora_cs, lora_rst, radio_freq_mhz)
+try:
+    rfm9x = adafruit_rfm9x.RFM9x(spi, digitalio.DigitalInOut(lora_cs), digitalio.DigitalInOut(lora_rst), radio_freq_mhz)
+    print('lora true')
+except:
+    rfm9x = FakeRFM9X()
+    print('lora false')
 rfm9x.send(bytes("Hello world!\r\n", "utf-8"))
 
 buffer = {
@@ -108,7 +123,7 @@ last_measured = time.time()
 
 async def main():
    interrupt_task = asyncio.create_task(fire_pyro_backup(states))
-   polling_task = asyncio.create_task(poll_sensors(bmp280, gps, sdcard, rfm9x))
+   polling_task = asyncio.create_task(poll_sensors(states, bmp280, gps, rfm9x, buffer))
 
    await asyncio.gather(interrupt_task, polling_task)
 
@@ -175,6 +190,6 @@ asyncio.run(main())
             #external.set_external_GPIO(0) #turns off the camera
             #camera_on = False
 
-   
+
    # buzzer.buzzer_tick()
    # states.tick()
