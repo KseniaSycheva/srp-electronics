@@ -135,7 +135,7 @@ class Statemachine:
                 elif to_state == States.LAUNCHED_MODE:
                     self.state = States.LAUNCHED_MODE
                     self.LAUNCHED = True
-                    self.set_launched_time()
+                    # self.set_launched_time()
                     state_trans_has_happened = True
 
             elif self.state == States.LAUNCHED_MODE:
@@ -146,7 +146,7 @@ class Statemachine:
             elif self.state == States.ERROR_MODE:
                 if to_state == States.IDLE_MODE:
                     self.state = States.IDLE_MODE
-                    self._queue_short_beep()
+                    # self._queue_short_beep()
                     state_trans_has_happened = True
 
             if state_trans_has_happened:

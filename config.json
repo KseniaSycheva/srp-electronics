@@ -1,7 +1,8 @@
 {
-   "buffer_capacity": 16,
-   "deployment_delay_in_miliseconds": 60000,
-   "radio_freq_mhz": 915.0,
+   "buffer_capacity": 2,
+   "deployment_delay_in_miliseconds": 25000,
+   "radio_freq_mhz": 868.0,
+   "file_writes": 4,
    "I2C": {
       "SDA": "SDA",
       "SCL": "SCL"
@@ -14,9 +15,6 @@
    "UART": {
       "RX": "RX",
       "TX": "TX"
-   },
-   "microSD": {
-      "cs": "A2"
    },
    "SX1276": {
       "cs": "A1",

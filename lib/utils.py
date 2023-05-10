@@ -4,18 +4,17 @@ import os
 import random
 import time
 
-
 BMP280_KEYS = ['temperature', 'pressure', 'altitude']
 
 
 def get_uart_pins(data):
-   pins = data['UART']
-   return getattr(board, pins['TX']), getattr(board, pins['RX'])
+    pins = data['UART']
+    return getattr(board, pins['TX']), getattr(board, pins['RX'])
 
 
 def get_i2c_pins(data):
-   pins = data['I2C']
-   return getattr(board, pins['SCL']), getattr(board, pins['SDA'])
+    pins = data['I2C']
+    return getattr(board, pins['SCL']), getattr(board, pins['SDA'])
 
 
 def get_spi_pins(data):
@@ -60,9 +59,10 @@ async def update_buffer(buffer, bmp280, gps):
     return success
 
 
-async def save_and_transmit(rfmx9, data):
+async def save_and_transmit(rfmx9, data, mode='a'):
     log_time = time.time()
-    with open(f'/data/bmp280.txt', 'a') as fp_bmp280, open(f'/data/gps.txt', 'a') as fp_gps:
+
+    with open(f'/data/bmp280.txt', mode) as fp_bmp280, open(f'/data/gps.txt', mode) as fp_gps:
 
         fp_bmp280.write(str(log_time) + "\n")
         fp_gps.write(str(log_time) + "\n")
@@ -70,12 +70,17 @@ async def save_and_transmit(rfmx9, data):
         for key, value in data.items():
             if key in BMP280_KEYS:
                 fp_bmp280.write(key + "\n")
-                fp_bmp280.write(" ".join(value))
+                fp_bmp280.write(" ".join([str(x) for x in value]))
+                fp_bmp280.write("\n")
             else:
-                print(value)
                 fp_gps.write(key + "\n")
-                fp_gps.write(" ".join(value))
+                fp_gps.write(" ".join([str(x) for x in value]))
+                fp_gps.write("\n")
 
+
+async def empty_buffer(data):
+    for key in data.keys():
+        data[key] = []
 
 
 class FakeDevice:

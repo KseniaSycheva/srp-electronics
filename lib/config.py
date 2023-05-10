@@ -1,4 +1,5 @@
 import json
+import sys
 
 def get_deployment_timer():
     '''
@@ -10,3 +11,4 @@ def get_deployment_timer():
     delay = parsed_jsondata['deployment_delay_in_miliseconds']
 
     return delay
+
