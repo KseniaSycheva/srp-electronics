@@ -135,7 +135,7 @@ class Statemachine:
                 elif to_state == States.LAUNCHED_MODE:
                     self.state = States.LAUNCHED_MODE
                     self.LAUNCHED = True
-                    # self.set_launched_time()
+                    self.set_launched_time()
                     state_trans_has_happened = True
 
             elif self.state == States.LAUNCHED_MODE:
